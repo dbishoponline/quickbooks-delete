@@ -142,7 +142,7 @@ router.get('/get_all_transactions', function (req, res) {
   })
 })
 
-router.post('/delete_all_transactions', function (req, res) {
+router.post('/delete_all_purchases', function (req, res) {
   var token = authorize(req, res)
 
   // Set up API call (with OAuth2 accessToken)
@@ -191,12 +191,189 @@ router.post('/delete_all_transactions', function (req, res) {
             })
           } else {
             res.json({
-              err: 'No Transactions Exist.'
+              err: 'No Purchases Exist.'
             })
           }
         })
         
 
+      }, function(err){
+        console.log(err)
+        return res.json(err)
+      })
+  })
+})
+
+router.post('/delete_all_bills', function (req, res) {
+  var token = authorize(req, res)
+
+  // Set up API call (with OAuth2 accessToken)
+  var selectStatement = encodeURIComponent(`select * from Bill`)
+  var queryUrl = config.api_uri + req.session.realmId + '/query?query=' + selectStatement
+  var deleteUrl = config.api_uri + req.session.realmId + '/bill?operation=delete'
+  var pluckBills = R.path(['QueryResponse', 'Bill'])
+  var getRequestObj = getRequest(queryUrl, token)
+  
+  console.log('Making API call to: ' + queryUrl)
+  request(getRequestObj, (err, response) => {
+    // Check if 401 response was returned - refresh tokens if so!
+    tools.checkForUnauthorized(req, getRequestObj, err, response)
+      .then(function ({err, response}) {
+        checkFailedStatus(err, response, res, function(err, response, res){
+
+          var transactions = pluckBills(JSON.parse(response.body))
+          
+          if(R.is(Array, transactions) && transactions.length) {
+  
+            transactions.map(transaction => {
+              var deleteRequestObj = deleteRequest(deleteUrl, token)
+              deleteRequestObj['body'] = JSON.stringify({
+                'SyncToken': '0',
+                'Id': transaction.Id
+              })
+    
+              // Make API call
+              console.log('Making API call to: ' + deleteUrl)
+              request(deleteRequestObj, function (err, response) {
+                // Check if 401 response was returned - refresh tokens if so!
+                tools.checkForUnauthorized(req, deleteRequestObj, err, response)
+                  .then(function ({err, response}) {
+                    checkFailedStatus(err, response, res, function(err, response, res){
+                      
+                      // API Call was a success!
+                      res.json(JSON.parse(response.body))
+                    })
+            
+                  }, function (err) {
+                    console.log(err)
+                    return res.json(err)
+                  })
+              })
+            })
+          } else {
+            res.json({
+              err: 'No Bills Exist.'
+            })
+          }
+        })
+      }, function(err){
+        console.log(err)
+        return res.json(err)
+      })
+  })
+})
+
+router.post('/delete_all_bill_payments', function (req, res) {
+  var token = authorize(req, res)
+
+  // Set up API call (with OAuth2 accessToken)
+  var selectStatement = encodeURIComponent(`select * from billpayment`)
+  var queryUrl = config.api_uri + req.session.realmId + '/query?query=' + selectStatement
+  var deleteUrl = config.api_uri + req.session.realmId + '/bill?operation=delete'
+  var pluckBills = R.path(['QueryResponse', 'BillPayment'])
+  var getRequestObj = getRequest(queryUrl, token)
+  
+  console.log('Making API call to: ' + queryUrl)
+  request(getRequestObj, (err, response) => {
+    // Check if 401 response was returned - refresh tokens if so!
+    tools.checkForUnauthorized(req, getRequestObj, err, response)
+      .then(function ({err, response}) {
+        checkFailedStatus(err, response, res, function(err, response, res){
+
+          var transactions = pluckBills(JSON.parse(response.body))
+          
+          if(R.is(Array, transactions) && transactions.length) {
+  
+            transactions.map(transaction => {
+              var deleteRequestObj = deleteRequest(deleteUrl, token)
+              deleteRequestObj['body'] = JSON.stringify({
+                'SyncToken': '0',
+                'Id': transaction.Id
+              })
+    
+              // Make API call
+              console.log('Making API call to: ' + deleteUrl)
+              request(deleteRequestObj, function (err, response) {
+                // Check if 401 response was returned - refresh tokens if so!
+                tools.checkForUnauthorized(req, deleteRequestObj, err, response)
+                  .then(function ({err, response}) {
+                    checkFailedStatus(err, response, res, function(err, response, res){
+                      
+                      // API Call was a success!
+                      res.json(JSON.parse(response.body))
+                    })
+            
+                  }, function (err) {
+                    console.log(err)
+                    return res.json(err)
+                  })
+              })
+            })
+          } else {
+            res.json({
+              err: 'No Bill Payments Exist.'
+            })
+          }
+        })
+      }, function(err){
+        console.log(err)
+        return res.json(err)
+      })
+  })
+})
+
+router.post('/delete_all_purchase_orders', function (req, res) {
+  var token = authorize(req, res)
+
+  // Set up API call (with OAuth2 accessToken)
+  var selectStatement = encodeURIComponent(`select * from PurchaseOrder`)
+  var queryUrl = config.api_uri + req.session.realmId + '/query?query=' + selectStatement
+  var deleteUrl = config.api_uri + req.session.realmId + '/bill?operation=delete'
+  var pluckBills = R.path(['QueryResponse', 'PurchaseOrder'])
+  var getRequestObj = getRequest(queryUrl, token)
+  
+  console.log('Making API call to: ' + queryUrl)
+  request(getRequestObj, (err, response) => {
+    // Check if 401 response was returned - refresh tokens if so!
+    tools.checkForUnauthorized(req, getRequestObj, err, response)
+      .then(function ({err, response}) {
+        checkFailedStatus(err, response, res, function(err, response, res){
+
+          var transactions = pluckBills(JSON.parse(response.body))
+          
+          if(R.is(Array, transactions) && transactions.length) {
+  
+            transactions.map(transaction => {
+              var deleteRequestObj = deleteRequest(deleteUrl, token)
+              deleteRequestObj['body'] = JSON.stringify({
+                'SyncToken': '0',
+                'Id': transaction.Id
+              })
+    
+              // Make API call
+              console.log('Making API call to: ' + deleteUrl)
+              request(deleteRequestObj, function (err, response) {
+                // Check if 401 response was returned - refresh tokens if so!
+                tools.checkForUnauthorized(req, deleteRequestObj, err, response)
+                  .then(function ({err, response}) {
+                    checkFailedStatus(err, response, res, function(err, response, res){
+                      
+                      // API Call was a success!
+                      res.json(JSON.parse(response.body))
+                    })
+            
+                  }, function (err) {
+                    console.log(err)
+                    return res.json(err)
+                  })
+              })
+            })
+          } else {
+            res.json({
+              err: 'No Purchase Orders Exist.'
+            })
+          }
+        })
       }, function(err){
         console.log(err)
         return res.json(err)

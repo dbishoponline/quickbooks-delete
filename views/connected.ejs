@@ -28,9 +28,30 @@
       })
     }
 
-    function deleteAllTransactions() {
+    function deleteAllPurchases() {
       $("#result").html('Loading...')
-      $.post("/api_call/delete_all_transactions", function(data) {
+      $.post("/api_call/delete_all_purchases", function(data) {
+        $("#result").html(JSON.stringify(data, null, 2))
+      })
+    }
+
+    function deleteAllBills() {
+      $("#result").html('Loading...')
+      $.post("/api_call/delete_all_bills", function(data) {
+        $("#result").html(JSON.stringify(data, null, 2))
+      })
+    }
+
+    function deleteAllBillPayments() {
+      $("#result").html('Loading...')
+      $.post("/api_call/delete_all_bill_payments", function(data) {
+        $("#result").html(JSON.stringify(data, null, 2))
+      })
+    }
+
+    function deleteAllPurchaseOrders() {
+      $("#result").html('Loading...')
+      $.post("/api_call/delete_all_purchase_orders", function(data) {
         $("#result").html(JSON.stringify(data, null, 2))
       })
     }
@@ -52,7 +73,10 @@
     <button onclick="apiCall()">QuickBooks API Call</button>
     <button onclick="refreshCall()">Refresh Token Call</button>
     <button onclick="revokeCall()">Revoke Token Call</button>
-    <button onclick="deleteAllTransactions()">Delete All Transactions</button>
+    <button onclick="deleteAllPurchases()">Delete All Purchases</button>
+    <button onclick="deleteAllBills()">Delete All Bills</button>
+    <button onclick="deleteAllBillPayments()">Delete All Bill Payments</button>
+    <button onclick="deleteAllPurchaseOrders()">Delete All Purchase Orders</button>
     <button onclick="getAllTransactions()">Get All Transactions</button>
     <br><br>
     <div><code id="result"></code></div>
