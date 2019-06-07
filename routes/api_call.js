@@ -15,9 +15,11 @@ const authorize = (req, res) => {
   return token
 }
 
-const checkError = (err, response, res) => {
+const checkFailedStatus = (err, response, res, callback) => {
   if(err || response.statusCode != 200) {
     return res.json({error: err, statusCode: response.statusCode})
+  } else {
+    callback(err, response, res)
   }
 }
 
@@ -54,10 +56,11 @@ router.get('/', function (req, res) {
   request(requestObj, function (err, response) {
     // Check if 401 response was returned - refresh tokens if so!
     tools.checkForUnauthorized(req, requestObj, err, response).then(function ({err, response}) {
-      checkError(err, response, res)
+      checkFailedStatus(err, response, res, function(err, response, res){
+        // API Call was a success!
+        res.json(JSON.parse(response.body))
+      })
 
-      // API Call was a success!
-      res.json(JSON.parse(response.body))
     }, function (err) {
       console.log(err)
       return res.json(err)
@@ -126,10 +129,12 @@ router.get('/get_all_transactions', function (req, res) {
     // Check if 401 response was returned - refresh tokens if so!
     tools.checkForUnauthorized(req, requestObj, err, response)
       .then(function ({err, response}) {
-        checkError(err, response, res)
+        checkFailedStatus(err, response, res, function(err, response, res){
+          
+          // API Call was a success!
+          res.json(JSON.parse(response.body))
+        })
 
-        // API Call was a success!
-        res.json(JSON.parse(response.body))
       }, function (err) {
         console.log(err)
         return res.json(err)
@@ -152,41 +157,45 @@ router.post('/delete_all_transactions', function (req, res) {
     // Check if 401 response was returned - refresh tokens if so!
     tools.checkForUnauthorized(req, getRequestObj, err, response)
       .then(function ({err, response}) {
-        checkError(err, response, res)
-        
-        var pluckTransactions = R.path(['QueryResponse', 'Purchase'])
-        var transactions = pluckTransactions(JSON.parse(response.body))
-        
-        if(R.is(Array, transactions) && transactions.length) {
+        checkFailedStatus(err, response, res, function(err, response, res){
 
-          transactions.map(transaction => {
-            let deleteRequestObj = deleteRequest(deleteUrl, token)
-            deleteRequestObj['body'] = JSON.stringify({
-              'SyncToken': '2',
-              'Id': transaction.Id
-            })
-  
-            // Make API call
-            console.log('Making API call to: ' + deleteUrl)
-            request(deleteRequestObj, function (err, response) {
-              // Check if 401 response was returned - refresh tokens if so!
-              tools.checkForUnauthorized(req, deleteRequestObj, err, response)
-                .then(function ({err, response}) {
-                  checkError(err, response, res)
+          var pluckTransactions = R.path(['QueryResponse', 'Purchase'])
+          var transactions = pluckTransactions(JSON.parse(response.body))
           
-                  // API Call was a success!
-                  res.json(JSON.parse(response.body))
-                }, function (err) {
-                  console.log(err)
-                  return res.json(err)
-                })
+          if(R.is(Array, transactions) && transactions.length) {
+  
+            transactions.map(transaction => {
+              var deleteRequestObj = deleteRequest(deleteUrl, token)
+              deleteRequestObj['body'] = JSON.stringify({
+                'SyncToken': '2',
+                'Id': transaction.Id
+              })
+    
+              // Make API call
+              console.log('Making API call to: ' + deleteUrl)
+              request(deleteRequestObj, function (err, response) {
+                // Check if 401 response was returned - refresh tokens if so!
+                tools.checkForUnauthorized(req, deleteRequestObj, err, response)
+                  .then(function ({err, response}) {
+                    checkFailedStatus(err, response, res, function(err, response, res){
+                      
+                      // API Call was a success!
+                      res.json(JSON.parse(response.body))
+                    })
+            
+                  }, function (err) {
+                    console.log(err)
+                    return res.json(err)
+                  })
+              })
             })
-          })
-        } else {
-          res.json({
-            err: 'No Transactions Exist.'
-          })
-        }
+          } else {
+            res.json({
+              err: 'No Transactions Exist.'
+            })
+          }
+        })
+        
 
       }, function(err){
         console.log(err)
