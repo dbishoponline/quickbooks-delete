@@ -27,6 +27,20 @@
         $("#result").html(JSON.stringify(data, null, 2))
       })
     }
+
+    function deleteAllTransactions() {
+      $("#result").html('Loading...')
+      $.post("/api_call/delete_all_transactions", function(data) {
+        $("#result").html(JSON.stringify(data, null, 2))
+      })
+    }
+
+    function getAllTransactions() {
+      $("#result").html('Loading...')
+      $.get("/api_call/get_all_transactions", function(data) {
+        $("#result").html(JSON.stringify(data, null, 2))
+      })
+    }
   </script>
 </head>
 <body>
@@ -38,6 +52,8 @@
     <button onclick="apiCall()">QuickBooks API Call</button>
     <button onclick="refreshCall()">Refresh Token Call</button>
     <button onclick="revokeCall()">Revoke Token Call</button>
+    <button onclick="deleteAllTransactions()">Delete All Transactions</button>
+    <button onclick="getAllTransactions()">Get All Transactions</button>
     <br><br>
     <div><code id="result"></code></div>
 </body>
