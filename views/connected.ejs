@@ -66,18 +66,58 @@
 </head>
 <body>
   <a href="/">Home</a>
-  <h3>Connected!</h3>
+  <h3>Connected to Quickbooks Online!</h3>
   <p>Welcome<% if (locals.givenName) { %>, <%= locals.givenName %><% } %>!</p>
-  <p>Would you like to make a sample API call?</p>
   <div>
-    <button onclick="apiCall()">QuickBooks API Call</button>
-    <button onclick="refreshCall()">Refresh Token Call</button>
-    <button onclick="revokeCall()">Revoke Token Call</button>
-    <button onclick="deleteAllPurchases()">Delete All Purchases</button>
-    <button onclick="deleteAllBills()">Delete All Bills</button>
-    <button onclick="deleteAllBillPayments()">Delete All Bill Payments</button>
-    <button onclick="deleteAllPurchaseOrders()">Delete All Purchase Orders</button>
-    <button onclick="getAllTransactions()">Get All Transactions</button>
+    <table>
+      <thead>
+        <tr>
+          <td></td>
+          <td></td>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><button onclick="apiCall()">QuickBooks API Call</button></td>
+          <td>Description here.</td>
+        </tr>
+        <tr>
+          <td><button onclick="refreshCall()">Refresh Token Call</button></td>
+          <td>Description here.</td>
+        </tr>
+        <tr>
+          <td><button onclick="revokeCall()">Revoke Token Call</button></td>
+          <td>Description here.</td>
+        </tr>
+        <tr>
+          <td colspan="2"></td>
+        </tr>
+        <tr>
+          <td><button onclick="getAllTransactions()">Get All Transactions</button></td>
+          <td>Description here.</td>
+        </tr>
+        <tr>
+          <td colspan="2"></td>
+        </tr>
+        <tr>
+          <td><button onclick="deleteAllPurchases()">Delete All Purchases</button></td>
+          <td>Description here.</td>
+        </tr>
+        <tr>
+          <td><button onclick="deleteAllBills()">Delete All Bills</button></td>
+          <td>Description here.</td>
+        </tr>
+        <tr>
+          <td><button onclick="deleteAllBillPayments()">Delete All Bill Payments</button></td>
+          <td>Description here.</td>
+        </tr>
+        <tr>
+          <td><button onclick="deleteAllPurchaseOrders()">Delete All Purchase Orders</button></td>
+          <td>Description here.</td>
+        </tr>
+      </tbody>
+    </table>
+
     <br><br>
     <div><code id="result"></code></div>
 </body>
