@@ -7,7 +7,7 @@ const getRequest = (url, token) =>
   }
 })
 
-const deleteRequest = (url, token) =>
+const deleteRequest = (url, token, body) =>
 ({
   url: url,
   method: 'POST',
@@ -16,6 +16,7 @@ const deleteRequest = (url, token) =>
     'Accept': 'application/json',
     'Content-Type': 'application/json'
   },
+  body,
 })
 
 module.exports = {

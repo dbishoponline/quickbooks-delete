@@ -174,6 +174,38 @@ var Tools = function () {
     )
   }
 
+  this.authorize = (req, res) => {
+    var token = this.getToken(req.session)
+    if(!token) return res.json({error: 'Not authorized'})
+    if(!req.session.realmId) return res.json({
+      error: 'No realm ID.  QBO calls only work if the accounting scope was passed!'
+    })
+  
+    return token
+  }
+  
+  this.checkFailedStatus = (error, response, res) =>
+    new Promise((resolve, reject) => {
+      if(error || response.statusCode != 200) {
+        reject({
+          error, 
+          statusCode: response.statusCode
+        })
+      } else {
+        resolve({
+          response, 
+          res,
+        })
+      }
+    })
+
+  this.getQueryEndpoint = (config, req, selectStatement) =>
+    config.api_uri + req.session.realmId + '/query?query=' + selectStatement
+  
+  this.getDeleteEndpoint = (config, req, type) =>
+    config.api_uri + req.session.realmId + `/${type.toLowerCase()}?operation=delete&minorversion=38`
+  
+
   this.refreshEndpoints()
 }
 

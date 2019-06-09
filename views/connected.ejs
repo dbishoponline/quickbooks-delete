@@ -56,9 +56,9 @@
       })
     }
 
-    function getAllTransactions() {
+    function getAll() {
       $("#result").html('Loading...')
-      $.get("/api_call/get_all_transactions", function(data) {
+      $.get("/api_call/get_all", function(data) {
         $("#result").html(JSON.stringify(data, null, 2))
       })
     }
@@ -93,7 +93,7 @@
           <td colspan="2"></td>
         </tr>
         <tr>
-          <td><button onclick="getAllTransactions()">Get All Transactions</button></td>
+          <td><button onclick="getAll()">Get All</button></td>
           <td>Description here.</td>
         </tr>
         <tr>

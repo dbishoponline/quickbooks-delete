@@ -1,14 +1,13 @@
-var tools = require('../tools/tools')
-var config = require('../config.json')
 var request = require('request')
 var express = require('express')
-var router = express.Router()
 var R = require('ramda')
 
+var config = require('../config.json')
+var tools = require('../tools/tools')
 var records = require('../tools/records')
-var helpers = require('../tools/api_call_helpers')
 var headers = require('../tools/headers')
 
+var router = express.Router()
 
 /** /api_call **/
 router.get('/', function (req, res) {
@@ -83,30 +82,8 @@ router.get('/refresh', function (req, res) {
 })
 
 /** /api_call **/
-router.get('/get_all_transactions', function (req, res) {
-  var token = helpers.authorize(req, res)
-
-  // Set up API call (with OAuth2 accessToken)
-  var selectStatement = encodeURIComponent(`select * from Purchase where TotalAmt < '100.00'`)
-  var url = config.api_uri + req.session.realmId + '/query?query=' + selectStatement
-  console.log('Making API call to: ' + url)
-  var requestObj = headers.getRequest(url, token)
-  // Make API call
-  request(requestObj, function (err, response) {
-    // Check if 401 response was returned - refresh tokens if so!
-    tools.checkForUnauthorized(req, requestObj, err, response)
-      .then(function ({err, response}) {
-        helpers.checkFailedStatus(err, response, res, function(err, response, res){
-          
-          // API Call was a success!
-          res.json(JSON.parse(response.body))
-        })
-
-      }, function (err) {
-        console.log(err)
-        return res.json(err)
-      })
-  })
+router.get('/get_all', function (req, res) {
+  records.query({ req, res }, `select * from Purchase`)
 })
 
 router.post('/delete_all_purchases', function (req, res) {
