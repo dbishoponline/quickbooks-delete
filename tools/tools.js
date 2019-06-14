@@ -2,6 +2,7 @@ var Tokens = require('csrf')
 var csrf = new Tokens()
 var ClientOAuth2 = require('client-oauth2')
 var request = require('request')
+var requestP = require('request-promise-native')
 var config = require('../config.json')
 
 var Tools = function () {
@@ -53,47 +54,59 @@ var Tools = function () {
   // Should be used to check for 401 response when making an API call.  If a 401
   // response is received, refresh tokens should be used to get a new access token,
   // and the API call should be tried again.
-  this.checkForUnauthorized = function(req, requestObj, err, response) {
-    return new Promise(function (resolve, reject) {
-      if(response.statusCode == 401) {
+  this.checkForUnauthorized = (req, requestObj, response) => {
+    if(config.debug) console.log(`checkForUnauthorized()`)
+
+    return new Promise((resolve, reject) => {
+
+      if (response.statusCode == 401) {
         console.log('Received a 401 response!  Trying to refresh tokens.')
 
         // Refresh the tokens
-        tools.refreshTokens(req.session).then(function(newToken) {
-          // Try API call again, with new accessToken
-          requestObj.headers.Authorization = 'Bearer ' + newToken.accessToken
-          console.log('Trying again, making API call to: ' + requestObj.url)
-          request(requestObj, function (err, response) {
-            // Logic (including error checking) should be continued with new
-            // err/response objects.
-            resolve({err, response})
+        tools.refreshTokens(req.session)
+          .then(newToken => {
+            // Try API call again, with new accessToken
+            requestObj.headers.Authorization = 'Bearer ' + newToken.accessToken
+
+            console.log('Trying again, making API call to: ' + requestObj.url)
+
+            request(requestObj, (error, response) => {
+              // Logic (including error checking) should be continued with new
+              // err/response objects.
+              resolve({ error, response })
+            })
           })
-        }, function(err) {
-          // Error refreshing the tokens
-          reject(err)
-        })
-      } else {
+          .catch(error => {
+            // Error refreshing the tokens
+            reject({ error, response })
+          })
+
+      }
+      else {
+        console.log(`success ${response.statusCode}`)
         // No 401, continue!
-        resolve({err, response})
+        resolve({ response })
       }
     })
   }
 
   // Refresh Token should be called if access token expires, or if Intuit
   // returns a 401 Unauthorized.
-  this.refreshTokens = function(session) {
+  this.refreshTokens = session => {
     var token = this.getToken(session)
 
     // Call refresh API
-    return token.refresh().then(function(newToken) {
-      // Store the new tokens
-      tools.saveToken(session, newToken)
-      return newToken
-    })
+    return token.refresh()
+      .then(newToken => {
+        // Store the new tokens
+        tools.saveToken(session, newToken)
+
+        return newToken
+      })
   }
 
   //A static function to refresh Token with refresh token. Return the token created.
-  this.refreshTokensWithToken = function(token) {
+  this.refreshTokensWithToken = token => {
     if(!token) {
       return Promise.reject(new Error('Nil Token passed for refreshTokensWithToken'))
     }
@@ -110,13 +123,14 @@ var Tools = function () {
         refresh_token: token,
         grant_type: 'refresh_token'
       }
-    }, function(err, response) {
+    }, (err, response) => {
       if(err) {
         console.log(err)
         return err
       }
 
       var json = JSON.parse(response.body)
+
       return tools.intuitAuth.createToken(
         json.access_token, json.refresh_token,
         json.token_type, json.x_refresh_token_expires_in)
@@ -184,12 +198,14 @@ var Tools = function () {
     return token
   }
   
-  this.checkFailedStatus = (error, response, res) =>
-    new Promise((resolve, reject) => {
+  this.checkFailedStatus = (error, response, res) => {
+    if(config.debug) console.log(`checkFailedStatus()`)
+    
+    return new Promise((resolve, reject) => {
       if(error || response.statusCode != 200) {
         reject({
           error, 
-          statusCode: response.statusCode
+          response,
         })
       } else {
         resolve({
@@ -198,15 +214,16 @@ var Tools = function () {
         })
       }
     })
+  }
 
-  this.getQueryEndpoint = (config, req, selectStatement) =>
-    config.api_uri + req.session.realmId + '/query?query=' + selectStatement
+  this.getQueryEndpoint = (api_uri, id, selectStatement) =>
+    api_uri + id + '/query?query=' + encodeURIComponent(selectStatement)
   
-  this.getDeleteEndpoint = (config, req, type) =>
-    config.api_uri + req.session.realmId + `/${type.toLowerCase()}?operation=delete&minorversion=38`
+  this.getDeleteEndpoint = (api_uri, id, type) =>
+    api_uri + id + `/${type.toLowerCase()}?operation=delete&minorversion=38`
   
 
   this.refreshEndpoints()
 }
 
-module.exports = new Tools();
+module.exports = new Tools()
