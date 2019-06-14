@@ -9,56 +9,56 @@
       window.close()
     }
 
-    function apiCall() {
+    const apiCall = () => {
       $("#result").html('Loading...')
-      $.get("/api_call", function(data) {
+      $.get("/api_call", (data) => {
         $("#result").html(JSON.stringify(data, null, 2))
       })
     }
-    function revokeCall() {
+    const revokeCall = () => {
       $("#result").html('Loading...')
-      $.get("/api_call/revoke", function(data) {
+      $.get("/api_call/revoke", (data) => {
         $("#result").html(JSON.stringify(data, null, 2))
       })
     }
-    function refreshCall() {
+    const refreshCall = () => {
       $("#result").html('Loading...')
-      $.get("/api_call/refresh", function(data) {
-        $("#result").html(JSON.stringify(data, null, 2))
-      })
-    }
-
-    function deleteAllPurchases() {
-      $("#result").html('Loading...')
-      $.post("/api_call/delete_all_purchases", function(data) {
+      $.get("/api_call/refresh", (data) => {
         $("#result").html(JSON.stringify(data, null, 2))
       })
     }
 
-    function deleteAllBills() {
+    const deleteAllPurchases = () => {
       $("#result").html('Loading...')
-      $.post("/api_call/delete_all_bills", function(data) {
+      $.post("/api_call/delete_all_purchases", (data) => {
         $("#result").html(JSON.stringify(data, null, 2))
       })
     }
 
-    function deleteAllBillPayments() {
+    const deleteAllBills = () => {
       $("#result").html('Loading...')
-      $.post("/api_call/delete_all_bill_payments", function(data) {
+      $.post("/api_call/delete_all_bills", (data) => {
         $("#result").html(JSON.stringify(data, null, 2))
       })
     }
 
-    function deleteAllPurchaseOrders() {
+    const deleteAllBillPayments = () => {
       $("#result").html('Loading...')
-      $.post("/api_call/delete_all_purchase_orders", function(data) {
+      $.post("/api_call/delete_all_bill_payments", (data) => {
         $("#result").html(JSON.stringify(data, null, 2))
       })
     }
 
-    function getAll() {
+    const deleteAllPurchaseOrders = () => {
       $("#result").html('Loading...')
-      $.get("/api_call/get_all", function(data) {
+      $.post("/api_call/delete_all_purchase_orders", (data) => {
+        $("#result").html(JSON.stringify(data, null, 2))
+      })
+    }
+
+    const getAll = () => {
+      $("#result").html('Loading...')
+      $.get("/api_call/get_all", (data) => {
         $("#result").html(JSON.stringify(data, null, 2))
       })
     }
