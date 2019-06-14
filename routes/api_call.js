@@ -1,4 +1,5 @@
 var request = require('request')
+var requestP = require('request-promise-native')
 var express = require('express')
 var R = require('ramda')
 
@@ -11,27 +12,22 @@ var router = express.Router()
 
 /** /api_call **/
 router.get('/', function (req, res) {
-  var token = helpers.authorize(req, res)
+  var token = tools.authorize(req, res)
 
   // Set up API call (with OAuth2 accessToken)
   var url = config.api_uri + req.session.realmId + '/companyinfo/' + req.session.realmId
-  var requestObj = helpers.getRequest(url, token)
+  var requestObj = headers.getRequest(url, token)
   console.log('Making API call to: ' + url)
 
   // Make API call
-  request(requestObj, function (err, response) {
-    // Check if 401 response was returned - refresh tokens if so!
-    tools.checkForUnauthorized(req, requestObj, err, response).then(function ({err, response}) {
-      helpers.checkFailedStatus(err, response, res, function(err, response, res){
-        // API Call was a success!
-        res.json(JSON.parse(response.body))
-      })
-
-    }, function (err) {
-      console.log(err)
-      return res.json(err)
+  requestP(requestObj)
+    .then(response => tools.checkForUnauthorized(req, requestObj, response))
+    .then(({ error, response }) => tools.checkFailedStatus(error, response, res))
+    .then(({ response, res }) => res.json(JSON.parse(response.body)))
+    .catch(({ error }) => {
+      console.log('\n\n', error)
+      return res.json(error)
     })
-  })
 })
 
 /** /api_call/revoke **/

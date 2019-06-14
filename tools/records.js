@@ -2,6 +2,8 @@ var request = require('request-promise-native')
 var express = require('express')
 var R = require('ramda')
 
+var QuickBooks = require('node-quickbooks')
+
 var config = require('../config.json')
 var headers = require('./headers')
 var tools = require('./tools')
@@ -9,81 +11,134 @@ var tools = require('./tools')
 const query = ({ req, res }, query) => {
   
   var token = tools.authorize(req, res)
-  var selectStatement = encodeURIComponent(query)
-  var url = tools.getQueryEndpoint(config, req, selectStatement)
-  var getRequestObj = headers.getRequest(url, token)
+  var url = tools.getQueryEndpoint(config.api_uri, req.session.realmId, query)
+  var requestObj = headers.getRequest(url, token)
   
   console.log('Making API call to: ' + url)
   
   // Make API call
-  return request(getRequestObj)
-    .then((err, response) => tools.checkForUnauthorized(req, getRequestObj, err, response))
-    .then(({ err, response }) => tools.checkFailedStatus(err, response, res))
+  request(requestObj)
+    .then(response => tools.checkForUnauthorized(req, requestObj, response))
+    .then(({ error, response }) => tools.checkFailedStatus(error, response, res))
     .then(({ response, res }) => res.json(JSON.parse(response.body)))
-    .catch(({ error, statusCode }) => {
-      console.log(error)
+    .catch(({ error }) => {
+      console.log('\n\n', error)
       return res.json(error)
     })
 }
 
 const queryAndDelete = ({ req, res }, query, type, syncToken) => {
-  
+
   var token = tools.authorize(req, res)
 
-  // Set up API call (with OAuth2 accessToken)
-  const selectStatement = encodeURIComponent(query)
-  const queryUrl = tools.getQueryEndpoint(config, req, selectStatement)
-  const deleteUrl = tools.getDeleteEndpoint(config, req)
+  QuickBooks.setOauthVersion("2.0")
+
+  var qbo = new QuickBooks(
+    config.clientId,
+    config.clientSecret,
+    token.accessToken /* oAuth access token */,
+    false /* no token secret for oAuth 2.0 */,
+    req.session.realmId,
+    false /* use a sandbox account */,
+    true /* turn debugging on */,
+    4 /* minor version */,
+    "2.0" /* oauth version */,
+    token.refreshToken /* refresh token */
+  )
+
+  const queryUrl = tools.getQueryEndpoint(config.api_uri, req.session.realmId, query)
+  const deleteUrl = tools.getDeleteEndpoint(config.api_uri, req.session.realmId, type)
   const pluckRecords = R.path(['QueryResponse', type])
   const getRequestObj = headers.getRequest(queryUrl, token)
-  const buildDeleteRequestsFromRecords = buildDeleteRequests(token, deleteUrl, syncToken)
+  const buildDeleteBatchRequestsFromRecords = buildDeleteRequests(type, syncToken)
+
   console.log('Making API call to: ' + queryUrl)
 
-  return request(getRequestObj)
-    .then((err, response) => tools.checkForUnauthorized(req, getRequestObj, err, response))
-    .then(({ err, response }) => tools.checkFailedStatus(err, response, res))
-    .then(( response, res) => pluckRecords(JSON.parse(response.body)))
-    .then(verifyItemsExist)
-    .then(buildDeleteRequestsFromRecords)
-    .then(runDeleteRequests)
-    .then(Promise.all)
+  request(getRequestObj)
+    .then(response => tools.checkForUnauthorized(req, getRequestObj, response))
+    .then(({ error, response }) => tools.checkFailedStatus(error, response, res))
+    .then(({ response }) => pluckRecords(JSON.parse(response.body)))
+    .then(verifyRecordsExist)
+    .then(buildDeleteBatchRequestsFromRecords)
+    .then(runBatchRequest)
     .then(outputResponse)
-    .catch(({ error, statusCode }) => {
-      console.log(error)
+    .catch(({ error }) => {
+      console.log('\n\n', error)
       return res.json(error)
     })
 }
 
-const verifyItemsExist = records => 
-  new Promise((resolve, reject) =>
-    R.is(Array, records) && records.length) 
+const verifyRecordsExist = records => {
+  if(config.debug) console.log(`verifyRecordsExist()`)
+
+  return new Promise((resolve, reject) =>
+    R.is(Array, records) && records.length
       ? resolve(records)
       : reject({
-        records,
         error: `No Records Exist.`
-      })
+      }))
+}
 
-const buildDeleteRequests =
-  R.curry((token, deleteUrl, syncToken, records) =>
-    records.map(record =>
-      headers.deleteRequest(
-        deleteUrl, 
-        token, 
-        JSON.stringify({
-          'SyncToken': syncToken,
-          'Id': record.Id
-        }))))
+const buildDeleteRequests = R.curry((type, syncToken, records) => {
+  if(config.debug) console.log(`buildDeleteRequests()`, type, syncToken, records)
 
-const runDeleteRequests = requests =>
-  requests.map(r => {
-    console.log('Making API call to: ' + deleteUrl)
-    return request(r)
-      .then(({ err, response }) => tools.checkFailedStatus(err, response, res))
-      .then(({ response, res }) => JSON.parse(response.body))
-  })
+  return records.map((record, i) => ({
+    bId: `bid${i}`,
+    operation: "delete",
+    `${type}`: {
+      SyncToken: `${syncToken}`,
+      Id: record.Id
+    }
+  }))
+})
 
-const outputResponse = requests =>
-  res.json(requests.reduce((acc, r) => `${acc} \n\n ${r}`, ''))
+const runBatchRequest = requests => {
+  if(config.debug) console.log(`runBatchRequest()`)
+
+  return new Promise((resolve, reject) =>
+    qbo.batch(requests.splice(0, 30), (err, responses) => {
+      if (err) reject(err)
+      else resolve(responses)
+    }))
+}
+
+// const buildDeleteRequests = R.curry((token, deleteUrl, syncToken, records) => {
+//   if(config.debug) console.log(`buildDeleteRequests()`, token, deleteUrl, syncToken)
+  
+//   return records.map(record =>
+//     headers.deleteRequest(
+//       deleteUrl, 
+//       token, 
+//       JSON.stringify({
+//         'SyncToken': syncToken,
+//         'Id': record.Id
+//       })))
+// })
+
+// const runDeleteRequests = (requests, req, res) => {
+//   if(config.debug) console.log(`runDeleteRequests()`)
+  
+//   // TODO: remove to make all requests
+//   requests = [requests.pop()]
+  
+//   return Promise.all(requests.map(requestObj => {
+//     console.log('Making API call to: ' + requestObj.url, requestObj)
+
+//     // return request(requestObj)
+//     //   .then(response => tools.checkForUnauthorized(req, requestObj, response))
+//     //   .then(({ error, response }) => tools.checkFailedStatus(error, response, res))
+//     //   .then(({ response }) => JSON.parse(response.body))
+//     //   .catch(({ error }) => {
+//     //     console.log('\n\n', error)
+//     //     return res.json(error)
+//     //   })
+//   }))
+// }
+
+const outputResponse = requests => {
+  if(config.debug) console.log(`outputResponse()`)
+  return res.json(requests)
+}
 
 module.exports = {
   query,
