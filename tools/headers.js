@@ -4,7 +4,8 @@ const getRequest = (url, token) =>
   headers: {
     'Authorization': 'Bearer ' + token.accessToken,
     'Accept': 'application/json'
-  }
+  },
+  resolveWithFullResponse: true,
 })
 
 const deleteRequest = (url, token, body) =>
@@ -17,6 +18,7 @@ const deleteRequest = (url, token, body) =>
     'Content-Type': 'application/json'
   },
   body,
+  resolveWithFullResponse: true,
 })
 
 module.exports = {
