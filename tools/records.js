@@ -51,7 +51,7 @@ const queryAndDelete = ({ req, res }, query, type, syncToken) => {
   const pluckRecords = R.path(['QueryResponse', type])
   const getRequestObj = headers.getRequest(queryUrl, token)
   const buildDeleteBatchRequestsFromRecords = buildDeleteRequests(type, syncToken)
-
+  const sendBatchRequestQuickbooks = sendBatchRequest(qbo)
   console.log('Making API call to: ' + queryUrl)
 
   request(getRequestObj)
@@ -60,8 +60,8 @@ const queryAndDelete = ({ req, res }, query, type, syncToken) => {
     .then(({ response }) => pluckRecords(JSON.parse(response.body)))
     .then(verifyRecordsExist)
     .then(buildDeleteBatchRequestsFromRecords)
-    .then(runBatchRequest)
-    .then(outputResponse)
+    .then(sendBatchRequestQuickbooks)
+    .then(response => outputResponse(res, response))
     .catch(({ error }) => {
       console.log('\n\n', error)
       return res.json(error)
@@ -80,27 +80,32 @@ const verifyRecordsExist = records => {
 }
 
 const buildDeleteRequests = R.curry((type, syncToken, records) => {
-  if(config.debug) console.log(`buildDeleteRequests()`, type, syncToken, records)
+  if(config.debug) console.log(`buildDeleteRequests()`)
 
   return records.map((record, i) => ({
     bId: `bid${i}`,
     operation: "delete",
-    `${type}`: {
+    [type]: {
       SyncToken: `${syncToken}`,
-      Id: record.Id
+      Id: record.Id,
+      AccountRef: {
+        value: `${record.AccountRef.value}`,
+        name: `${record.AccountRef.name}`
+      },
     }
   }))
 })
 
-const runBatchRequest = requests => {
-  if(config.debug) console.log(`runBatchRequest()`)
+const sendBatchRequest = R.curry((qbo, requests) => {
+  if(config.debug) console.log(`sendBatchRequest()`)
 
-  return new Promise((resolve, reject) =>
+  return new Promise((resolve, reject) => {
     qbo.batch(requests.splice(0, 30), (err, responses) => {
       if (err) reject(err)
       else resolve(responses)
-    }))
-}
+    })
+  })
+})
 
 // const buildDeleteRequests = R.curry((token, deleteUrl, syncToken, records) => {
 //   if(config.debug) console.log(`buildDeleteRequests()`, token, deleteUrl, syncToken)
@@ -135,8 +140,8 @@ const runBatchRequest = requests => {
 //   }))
 // }
 
-const outputResponse = requests => {
-  if(config.debug) console.log(`outputResponse()`)
+const outputResponse = (res, response) => {
+  if(config.debug) console.log(`outputResponse()`, response)
   return res.json(requests)
 }
 

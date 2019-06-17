@@ -35,6 +35,13 @@
       })
     }
 
+    const deleteJournalEntries = () => {
+      $("#result").html('Loading...')
+      $.post("/api_call/delete_journal_entries", (data) => {
+        $("#result").html(JSON.stringify(data, null, 2))
+      })
+    }
+
     const deleteAllBills = () => {
       $("#result").html('Loading...')
       $.post("/api_call/delete_all_bills", (data) => {
@@ -59,6 +66,13 @@
     const getAll = () => {
       $("#result").html('Loading...')
       $.get("/api_call/get_all", (data) => {
+        $("#result").html(JSON.stringify(data, null, 2))
+      })
+    }
+
+    const getJournalEntries = () => {
+      $("#result").html('Loading...')
+      $.get("/api_call/get_journal_entries", (data) => {
         $("#result").html(JSON.stringify(data, null, 2))
       })
     }
@@ -97,10 +111,18 @@
           <td>Description here.</td>
         </tr>
         <tr>
+          <td><button onclick="getJournalEntries()">Get All</button></td>
+          <td>Description here.</td>
+        </tr>
+        <tr>
           <td colspan="2"></td>
         </tr>
         <tr>
           <td><button onclick="deleteAllPurchases()">Delete All Purchases</button></td>
+          <td>Description here.</td>
+        </tr>
+        <tr>
+          <td><button onclick="deleteJournalEntries()">Delete Journal Entries</button></td>
           <td>Description here.</td>
         </tr>
         <tr>

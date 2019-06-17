@@ -82,8 +82,17 @@ router.get('/get_all', function (req, res) {
   records.query({ req, res }, `select * from Purchase`)
 })
 
+/** /api_call **/
+router.get('/get_journal_entries', function (req, res) {
+  records.query({ req, res }, `select * from JournalEntry`)
+})
+
 router.post('/delete_all_purchases', function (req, res) {
   records.queryAndDelete({ req, res }, `select * from Purchase`, 'Purchase', 2)
+})
+
+router.post("/delete_journal_entries", function(req, res) {
+  records.queryAndDelete({ req, res }, `select * from JournalEntry`, "JournalEntry", 0)
 })
 
 router.post('/delete_all_bills', function (req, res) {
